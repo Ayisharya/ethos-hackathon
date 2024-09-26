@@ -1,0 +1,9 @@
+
+import glob
+npzFilesFullPath = glob.glob('/kaggle/input/youtube-faces-with-facial-keypoints/youtube_faces_with_keypoints_full_3/youtube_faces_with_keypoints_full_3/Kate_Capshaw_2.npz')
+videoIDs = [x.split('/')[-1].split('.')[0] for x in npzFilesFullPath]
+fullPaths = {}
+for videoID, fullPath in zip(videoIDs, npzFilesFullPath):
+    fullPaths[videoID]=fullPath
+from IPython.display import YouTubeVideo
+YouTubeVideo('8FdSHl4oNIM',width=640,height=480)
