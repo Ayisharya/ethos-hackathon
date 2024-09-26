@@ -1,0 +1,74 @@
+# install tensorflow library
+!pip install tensorflow
+#install opencv linrary
+!pip install opencv-python
+#install face recognition and dlib library
+!pip install face_recognition
+#install haarcascade xml file
+!wget https://github.com/opencv/opencv/raw/master/data/haarcascades/haarcascade_frontalface_default.xml
+# to separate the video frame wise and print it
+import numpy as np
+import face_recognition
+import cv2
+import matplotlib.pyplot as plt
+
+# Load the .npz file (assuming 'colorImages' contains the video frames)
+npz_file_path = '/kaggle/input/youtube-faces-with-facial-keypoints/youtube_faces_with_keypoints_full_3/youtube_faces_with_keypoints_full_3/Kate_Capshaw_2.npz'
+
+# Load the data from the NPZ file
+try:
+    data = np.load(npz_file_path)
+    # Extract the video frames from the 'colorImages' key
+    video_frames = data['colorImages']
+    print(f"Shape of video frames: {video_frames.shape}")
+except Exception as e:
+    print(f"Error loading NPZ file: {e}")
+    raise
+
+# Loop through each frame for face detection and recognition
+for frame_idx in range(video_frames.shape[0]):  # Iterate over the first dimension for frames
+    img = video_frames[frame_idx]  # Access the frame directly
+    
+    # Check if the shape is valid
+    if img.ndim == 3 and img.shape == (217, 3, 51):
+        # Rearrange the dimensions to (height, width, channels)
+        img = img.transpose(0, 2, 1)  # New shape will be (217, 51, 3)
+    else:
+        print(f"Skipping frame {frame_idx}, unexpected shape: {img.shape}")
+        continue
+
+    # Ensure the image is 8-bit unsigned integer
+    if img.dtype != np.uint8:
+        img = img.astype(np.uint8)
+
+    # Print the image shape and dtype for debugging
+    print(f"Processing frame {frame_idx}: shape={img.shape}, dtype={img.dtype}")
+
+    # Detect face locations
+    try:
+        face_locations = face_recognition.face_locations(img)
+    except Exception as e:
+        print(f"Error detecting faces in frame {frame_idx}: {e}")
+        continue
+
+    # If faces are detected, extract the encodings
+    if face_locations:
+        face_encodings = face_recognition.face_encodings(img, face_locations)
+
+        # Loop through each detected face encoding and face location
+        for face_encoding, face_location in zip(face_encodings, face_locations):
+            # Draw rectangles around detected faces
+            top, right, bottom, left = face_location
+            cv2.rectangle(img, (left, top), (right, bottom), (0, 255, 0), 2)
+
+    # Display every 10th frame for visualization
+    if frame_idx % 10 == 0:
+        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        plt.imshow(rgb_img)
+        plt.axis('off')
+        plt.show()
+        plt.pause(0.01)
+
+# Make sure to close any open plots when done
+plt.close()
+
