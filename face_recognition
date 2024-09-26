@@ -1,0 +1,109 @@
+!pip install pytube face_recognition opencv-python-headless
+!pip install youtube_dl
+!pip install yt-dlp
+# install the above libraries to run the code
+# faces will be detected in the video
+import yt_dlp as youtube_dl
+import cv2
+import numpy as np
+import face_recognition
+from IPython.display import display, clear_output
+from PIL import Image as PILImage
+import time
+
+# Function to download YouTube video using yt-dlp
+def download_youtube_video_yt_dlp(url):
+    try:
+        ydl_opts = {
+            'format': 'best',
+            'outtmpl': 'downloaded_video.mp4',
+            'noplaylist': True
+        }
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        print("Video downloaded successfully!")
+        return 'downloaded_video.mp4'
+    except Exception as e:
+        print(f"Error downloading video: {e}")
+        return None
+
+# Function to process video and detect faces
+def process_video_with_face_detection(video_path):
+    known_face_encodings = []
+    known_face_ids = []
+    next_face_id = 1
+    
+    # Open the video file using OpenCV
+    cap = cv2.VideoCapture(video_path)
+    
+    if not cap.isOpened():
+        print("Error opening video file.")
+        return
+    
+    frame_idx = 0
+    while cap.isOpened():
+        ret, frame = cap.read()
+        
+        if not ret:
+            break
+        
+        # Resize the frame for faster processing (optional)
+        small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+        rgb_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
+        
+        # Detect face locations and encodings
+        face_locations = face_recognition.face_locations(rgb_frame)
+        face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+        
+        face_ids = []
+        for face_encoding, face_location in zip(face_encodings, face_locations):
+            # Check for matches with known faces
+            if known_face_encodings:
+                distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+                best_match_index = np.argmin(distances)
+                if distances[best_match_index] < 0.5:  # Use a threshold for matching
+                    face_id = known_face_ids[best_match_index]
+                else:
+                    # Assign a new ID for a new face
+                    face_id = next_face_id
+                    known_face_encodings.append(face_encoding)
+                    known_face_ids.append(face_id)
+                    next_face_id += 1
+            else:
+                # First face in the video gets assigned the first ID
+                face_id = next_face_id
+                known_face_encodings.append(face_encoding)
+                known_face_ids.append(face_id)
+                next_face_id += 1
+            
+            face_ids.append(face_id)
+            
+            # Draw rectangles around detected faces and display face ID
+            top, right, bottom, left = face_location
+            cv2.rectangle(small_frame, (left, top), (right, bottom), (0, 255, 0), 2)
+            cv2.putText(small_frame, f"ID {face_id}", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        
+        if frame_idx % 10 == 0:
+            # Display every 10th frame
+            pil_img = PILImage.fromarray(cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB))
+            clear_output(wait=True)
+            display(pil_img)
+            time.sleep(0.1)
+        
+        frame_idx += 1
+    
+    cap.release()
+    print("Finished processing video.")
+
+# Input YouTube URL from user
+youtube_url = input("Enter the YouTube video URL: ")
+
+# Download the YouTube video using yt-dlp
+video_path = download_youtube_video_yt_dlp(youtube_url)
+
+if video_path:
+    process_video_with_face_detection(video_path)
+
+#output will ask for an input youtube url that we will get from the output of the file where we are accessing the dataset
+
+    
