@@ -6,7 +6,7 @@ from IPython.display import display, clear_output
 from PIL import Image as PILImage
 import time
 
-# Function to download YouTube video using yt-dlp
+#  Function to download YouTube video using yt-dlp
 def download_youtube_video_yt_dlp(url):
     try:
         ydl_opts = {
